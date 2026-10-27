@@ -363,7 +363,6 @@ fn collect_checks() -> Vec<DoctorCheck> {
     checks.extend(window_checks());
     checks.extend(input_checks());
     checks.extend(ocr_checks());
-    checks.extend(python_grpc_checks());
     checks.extend(desktop_profile_checks());
 
     checks
@@ -508,7 +507,6 @@ fn command_checks() -> Vec<DoctorCheck> {
         ("wl-copy", "Wayland clipboard backend"),
         ("xclip", "X11 clipboard backend"),
         ("xsel", "X11 clipboard backend"),
-        ("python3", "Python client/runtime checks"),
     ]
     .into_iter()
     .map(|(command, purpose)| {
@@ -667,28 +665,6 @@ fn ocr_checks() -> Vec<DoctorCheck> {
     }
 }
 
-fn python_grpc_checks() -> Vec<DoctorCheck> {
-    if !command_exists("python3") {
-        return vec![DoctorCheck::warn("python-grpc", "python3 not found")];
-    }
-    let status = Command::new("python3")
-        .args(["-c", "import grpc, google.protobuf; print('grpc-ok')"])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-    if status.is_ok_and(|status| status.success()) {
-        vec![DoctorCheck::ok(
-            "python-grpc",
-            "grpc and protobuf import successfully",
-        )]
-    } else {
-        vec![DoctorCheck::warn(
-            "python-grpc",
-            "grpc/protobuf imports failed; install python[dev] or package dependencies",
-        )]
-    }
-}
-
 fn desktop_profile_checks() -> Vec<DoctorCheck> {
     let profiles = peekaboox_desktop::desktop_profiles();
     vec![DoctorCheck::ok(
@@ -757,7 +733,6 @@ fn check_category(name: &str) -> &'static str {
         "desktop-session" | "display-server" | "windows" | "desktop-profiles" | "command:gdbus"
         | "command:gtk-launch" => "desktop",
         "ocr" | "command:tesseract" => "ocr",
-        "python-grpc" | "command:python3" => "python",
         "command:xdotool" | "command:ydotool" | "command:wtype" | "command:wl-copy"
         | "command:xclip" | "command:xsel" => "input",
         _ => "general",
